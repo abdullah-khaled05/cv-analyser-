@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 
-BACKEND_URL = st.secrets["https://cv-analyser-fawn.vercel.app"]
+BACKEND_URL = "https://cv-analyser-fawn.vercel.app"
 st.set_page_config(
     page_title="CV Intelligence Analyzer",
     page_icon="📄",
