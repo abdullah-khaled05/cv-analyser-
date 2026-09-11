@@ -45,7 +45,10 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file:
 
-    if st.button("Analyze CV", type="primary"):
+    if st.button(
+        "Analyze CV",
+        type="primary"
+    ):
 
         with st.spinner("Analyzing CV..."):
 
@@ -53,6 +56,7 @@ if uploaded_file:
 
                 response = requests.post(
                     f"{BACKEND_URL}/analyze",
+
                     files={
                         "file": (
                             uploaded_file.name,
@@ -60,8 +64,10 @@ if uploaded_file:
                             "application/pdf"
                         )
                     },
+
                     timeout=120
                 )
+
 
                 # ====================================================
                 # BACKEND ERROR
@@ -93,12 +99,17 @@ if uploaded_file:
 
 
                     # ====================================================
-                    # EXPERIENCE SUMMARY
+                    # PHASE 2 SUMMARY
                     # ====================================================
 
-                    st.header("Experience Summary")
+                    st.header("Phase 2 Analysis Summary")
 
                     col1, col2, col3, col4 = st.columns(4)
+
+
+                    # ------------------------------------------------
+                    # Total Experience
+                    # ------------------------------------------------
 
                     with col1:
 
@@ -110,6 +121,11 @@ if uploaded_file:
                             )
                         )
 
+
+                    # ------------------------------------------------
+                    # Employment Gaps
+                    # ------------------------------------------------
+
                     with col2:
 
                         st.metric(
@@ -120,17 +136,12 @@ if uploaded_file:
                             )
                         )
 
+
+                    # ------------------------------------------------
+                    # Employment Overlaps
+                    # ------------------------------------------------
+
                     with col3:
-
-                        st.metric(
-                            "Total Gap Duration",
-                            experience_analysis.get(
-                                "total_gap_duration",
-                                "0 months"
-                            )
-                        )
-
-                    with col4:
 
                         st.metric(
                             "Employment Overlaps",
@@ -141,39 +152,114 @@ if uploaded_file:
                         )
 
 
+                    # ------------------------------------------------
+                    # Total Gap Duration
+                    # ------------------------------------------------
+
+                    with col4:
+
+                        st.metric(
+                            "Total Gap Duration",
+                            experience_analysis.get(
+                                "total_gap_duration",
+                                "0 months"
+                            )
+                        )
+
+
                     # ====================================================
                     # EDUCATION MILESTONES
                     # ====================================================
 
-                    st.header("Education Milestones")
+                    st.header("Education Timeline")
 
-                    col1, col2 = st.columns(2)
+                    education_timeline = (
+                        experience_analysis.get(
+                            "education_timeline",
+                            {}
+                        )
+                    )
 
-                    with col1:
 
-                        bachelors = experience_analysis.get(
-                            "bachelors_graduation"
+                    education_rows = []
+
+
+                    education_levels = [
+                        (
+                            "Matriculation",
+                            "matriculation"
+                        ),
+                        (
+                            "Intermediate",
+                            "intermediate"
+                        ),
+                        (
+                            "Bachelor's",
+                            "bachelors"
+                        ),
+                        (
+                            "Master's",
+                            "masters"
+                        )
+                    ]
+
+
+                    for display_name, key in education_levels:
+
+                        milestone = (
+                            education_timeline.get(
+                                key,
+                                {}
+                            )
                         )
 
-                        st.metric(
-                            "Bachelor's Graduation",
-                            bachelors
-                            if bachelors
-                            else "Not found"
-                        )
+                        education_rows.append({
 
-                    with col2:
+                            "Education Level":
+                                display_name,
 
-                        masters = experience_analysis.get(
-                            "masters_graduation"
-                        )
+                            "Status":
+                                milestone.get(
+                                    "status",
+                                    "Not found"
+                                ),
 
-                        st.metric(
-                            "Master's Graduation",
-                            masters
-                            if masters
-                            else "Not found"
-                        )
+                            "Degree":
+                                milestone.get(
+                                    "degree",
+                                    ""
+                                ),
+
+                            "Institution":
+                                milestone.get(
+                                    "institution",
+                                    ""
+                                ),
+
+                            "Start":
+                                milestone.get(
+                                    "start",
+                                    ""
+                                ),
+
+                            "End":
+                                milestone.get(
+                                    "end",
+                                    ""
+                                )
+                        })
+
+
+                    education_timeline_df = pd.DataFrame(
+                        education_rows
+                    )
+
+
+                    st.dataframe(
+                        education_timeline_df,
+                        use_container_width=True,
+                        hide_index=True
+                    )
 
 
                     # ====================================================
@@ -187,9 +273,11 @@ if uploaded_file:
                         []
                     )
 
+
                     if timeline:
 
                         timeline_rows = []
+
 
                         for index, job in enumerate(
                             timeline,
@@ -238,9 +326,11 @@ if uploaded_file:
                                     )
                             })
 
+
                         timeline_df = pd.DataFrame(
                             timeline_rows
                         )
+
 
                         st.dataframe(
                             timeline_df,
@@ -256,19 +346,23 @@ if uploaded_file:
 
 
                     # ====================================================
-                    # EMPLOYMENT GAP ANALYSIS
+                    # POST-BACHELOR EMPLOYMENT GAP ANALYSIS
                     # ====================================================
 
-                    st.header("Employment Gap Analysis")
+                    st.header(
+                        "Post-Bachelor Employment Gap Analysis"
+                    )
 
                     gaps = experience_analysis.get(
                         "employment_gaps",
                         []
                     )
 
+
                     if gaps:
 
                         gap_rows = []
+
 
                         for index, gap in enumerate(
                             gaps,
@@ -311,9 +405,11 @@ if uploaded_file:
                                     )
                             })
 
+
                         gap_df = pd.DataFrame(
                             gap_rows
                         )
+
 
                         st.dataframe(
                             gap_df,
@@ -321,10 +417,17 @@ if uploaded_file:
                             hide_index=True
                         )
 
+
+                        st.info(
+                            "Employment gaps are measured after "
+                            "Bachelor's completion and between "
+                            "separate employment periods."
+                        )
+
                     else:
 
                         st.success(
-                            "No employment gaps detected."
+                            "No post-Bachelor employment gaps detected."
                         )
 
 
@@ -332,16 +435,20 @@ if uploaded_file:
                     # EMPLOYMENT OVERLAPS
                     # ====================================================
 
-                    st.header("Employment Overlap Analysis")
+                    st.header(
+                        "Employment Overlap Analysis"
+                    )
 
                     overlaps = experience_analysis.get(
                         "employment_overlaps",
                         []
                     )
 
+
                     if overlaps:
 
                         overlap_rows = []
+
 
                         for index, overlap in enumerate(
                             overlaps,
@@ -357,6 +464,7 @@ if uploaded_file:
                                 "job_2",
                                 {}
                             )
+
 
                             overlap_rows.append({
 
@@ -400,9 +508,11 @@ if uploaded_file:
                                     )
                             })
 
+
                         overlap_df = pd.DataFrame(
                             overlap_rows
                         )
+
 
                         st.dataframe(
                             overlap_df,
@@ -410,10 +520,11 @@ if uploaded_file:
                             hide_index=True
                         )
 
+
                         st.info(
                             "Overlapping employment periods are "
-                            "reported separately but are counted "
-                            "only once toward total professional experience."
+                            "reported separately but counted only "
+                            "once toward total professional experience."
                         )
 
                     else:
@@ -424,19 +535,25 @@ if uploaded_file:
 
 
                     # ====================================================
-                    # EDUCATION GAPS
+                    # EDUCATION GAP ANALYSIS
                     # ====================================================
 
-                    st.header("Education Gap Analysis")
-
-                    education_gaps = experience_analysis.get(
-                        "education_gaps",
-                        []
+                    st.header(
+                        "Education Gap Analysis"
                     )
+
+                    education_gaps = (
+                        experience_analysis.get(
+                            "education_gaps",
+                            []
+                        )
+                    )
+
 
                     if education_gaps:
 
                         education_gap_rows = []
+
 
                         for index, gap in enumerate(
                             education_gaps,
@@ -448,15 +565,21 @@ if uploaded_file:
                                 "Gap":
                                     f"Gap {index}",
 
-                                "From Degree":
+                                "From Level":
                                     gap.get(
-                                        "from_degree",
+                                        "from_level",
                                         ""
                                     ),
 
-                                "To Degree":
+                                "To Level":
                                     gap.get(
-                                        "to_degree",
+                                        "to_level",
+                                        ""
+                                    ),
+
+                                "Status":
+                                    gap.get(
+                                        "status",
                                         ""
                                     ),
 
@@ -485,9 +608,11 @@ if uploaded_file:
                                     )
                             })
 
+
                         education_gap_df = pd.DataFrame(
                             education_gap_rows
                         )
+
 
                         st.dataframe(
                             education_gap_df,
@@ -495,10 +620,17 @@ if uploaded_file:
                             hide_index=True
                         )
 
+
+                        st.info(
+                            "Education gaps are checked across "
+                            "Matriculation → Intermediate → Bachelor's "
+                            "→ Master's."
+                        )
+
                     else:
 
-                        st.success(
-                            "No education gaps detected."
+                        st.info(
+                            "No education gap information available."
                         )
 
 
@@ -506,67 +638,90 @@ if uploaded_file:
                     # PERSONAL INFORMATION
                     # ====================================================
 
-                    st.header("Personal Information")
+                    st.header(
+                        "Personal Information"
+                    )
 
                     personal = cv_data.get(
                         "personal",
                         {}
                     )
 
+
                     personal_rows = [
 
                         {
-                            "Field": "Name",
-                            "Value": personal.get(
-                                "name",
-                                ""
-                            )
+                            "Field":
+                                "Name",
+
+                            "Value":
+                                personal.get(
+                                    "name",
+                                    ""
+                                )
                         },
 
                         {
-                            "Field": "Email",
-                            "Value": personal.get(
-                                "email",
-                                ""
-                            )
+                            "Field":
+                                "Email",
+
+                            "Value":
+                                personal.get(
+                                    "email",
+                                    ""
+                                )
                         },
 
                         {
-                            "Field": "Phone",
-                            "Value": personal.get(
-                                "phone",
-                                ""
-                            )
+                            "Field":
+                                "Phone",
+
+                            "Value":
+                                personal.get(
+                                    "phone",
+                                    ""
+                                )
                         },
 
                         {
-                            "Field": "Location",
-                            "Value": personal.get(
-                                "location",
-                                ""
-                            )
+                            "Field":
+                                "Location",
+
+                            "Value":
+                                personal.get(
+                                    "location",
+                                    ""
+                                )
                         },
 
                         {
-                            "Field": "LinkedIn",
-                            "Value": personal.get(
-                                "linkedin",
-                                ""
-                            )
+                            "Field":
+                                "LinkedIn",
+
+                            "Value":
+                                personal.get(
+                                    "linkedin",
+                                    ""
+                                )
                         },
 
                         {
-                            "Field": "GitHub",
-                            "Value": personal.get(
-                                "github",
-                                ""
-                            )
+                            "Field":
+                                "GitHub",
+
+                            "Value":
+                                personal.get(
+                                    "github",
+                                    ""
+                                )
                         }
                     ]
+
 
                     personal_df = pd.DataFrame(
                         personal_rows
                     )
+
 
                     st.dataframe(
                         personal_df,
@@ -579,9 +734,12 @@ if uploaded_file:
                     # EDUCATION
                     # ====================================================
 
-                    st.header("Education")
+                    st.header(
+                        "Extracted Education"
+                    )
 
                     education_rows = []
+
 
                     for education in cv_data.get(
                         "education",
@@ -621,11 +779,13 @@ if uploaded_file:
                                 )
                         })
 
+
                     if education_rows:
 
                         education_df = pd.DataFrame(
                             education_rows
                         )
+
 
                         st.dataframe(
                             education_df,
@@ -644,9 +804,12 @@ if uploaded_file:
                     # WORK EXPERIENCE
                     # ====================================================
 
-                    st.header("Extracted Work Experience")
+                    st.header(
+                        "Extracted Work Experience"
+                    )
 
                     experience_rows = []
+
 
                     for experience in cv_data.get(
                         "experience",
@@ -658,6 +821,7 @@ if uploaded_file:
                             []
                         )
 
+
                         if isinstance(
                             description,
                             list
@@ -666,6 +830,7 @@ if uploaded_file:
                             description = " ".join(
                                 description
                             )
+
 
                         experience_rows.append({
 
@@ -697,11 +862,13 @@ if uploaded_file:
                                 description
                         })
 
+
                     if experience_rows:
 
                         experience_df = pd.DataFrame(
                             experience_rows
                         )
+
 
                         st.dataframe(
                             experience_df,
@@ -720,12 +887,15 @@ if uploaded_file:
                     # SKILLS
                     # ====================================================
 
-                    st.header("Skills")
+                    st.header(
+                        "Skills"
+                    )
 
                     skills = cv_data.get(
                         "skills",
                         {}
                     )
+
 
                     skills_rows = [
 
@@ -808,9 +978,11 @@ if uploaded_file:
                         }
                     ]
 
+
                     skills_df = pd.DataFrame(
                         skills_rows
                     )
+
 
                     st.dataframe(
                         skills_df,
@@ -823,9 +995,12 @@ if uploaded_file:
                     # PROJECTS
                     # ====================================================
 
-                    st.header("Projects")
+                    st.header(
+                        "Projects"
+                    )
 
                     project_rows = []
+
 
                     for project in cv_data.get(
                         "projects",
@@ -837,6 +1012,7 @@ if uploaded_file:
                             []
                         )
 
+
                         if isinstance(
                             technologies,
                             list
@@ -845,6 +1021,7 @@ if uploaded_file:
                             technologies = ", ".join(
                                 technologies
                             )
+
 
                         project_rows.append({
 
@@ -864,11 +1041,13 @@ if uploaded_file:
                                 )
                         })
 
+
                     if project_rows:
 
                         projects_df = pd.DataFrame(
                             project_rows
                         )
+
 
                         st.dataframe(
                             projects_df,
@@ -887,9 +1066,12 @@ if uploaded_file:
                     # CERTIFICATIONS
                     # ====================================================
 
-                    st.header("Certifications")
+                    st.header(
+                        "Certifications"
+                    )
 
                     certification_rows = []
+
 
                     for certification in cv_data.get(
                         "certifications",
@@ -917,11 +1099,13 @@ if uploaded_file:
                                 )
                         })
 
+
                     if certification_rows:
 
                         certifications_df = pd.DataFrame(
                             certification_rows
                         )
+
 
                         st.dataframe(
                             certifications_df,
@@ -947,6 +1131,7 @@ if uploaded_file:
                     "Please try again."
                 )
 
+
             except requests.exceptions.ConnectionError:
 
                 st.error(
@@ -954,12 +1139,14 @@ if uploaded_file:
                     "Please check that the Vercel backend is running."
                 )
 
+
             except ValueError:
 
                 st.error(
                     "The backend returned an invalid response. "
                     "Please check the API response."
                 )
+
 
             except Exception as e:
 
